@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.heritage.dao.ProductDao">
+
+    <resultMap id="productMap" type="com.heritage.entity.Product">
+        <id property="productId" column="product_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="productName" column="product_name"/>
+        <result property="productDesc" column="product_desc"/>
+        <result property="mainImage" column="main_image"/>
+        <result property="detailImages" column="detail_images"/>
+        <result property="price" column="price"/>
+        <result property="stock" column="stock"/>
+        <result property="sales" column="sales"/>
+        <result property="status" column="status"/>
+        <result property="isHot" column="is_hot"/>
+        <result property="isNew" column="is_new"/>
+        <result property="createTime" column="create_time"/>
+        <!-- 关联查询出来的分类名称 -->
+        <result property="categoryName" column="category_name"/>
+    </resultMap>
+
+    <!-- 公共查询条件（动态 SQL）：分类、关键字、价格区间、上架状态 -->
+    <sql id="queryCondition">
+        <where>
+            <if test="categoryId != null">
+                AND p.category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND p.product_name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="minPrice != null">
+                AND p.price &gt;= #{minPrice}
+            </if>
+            <if test="maxPrice != null">
+                AND p.price &lt;= #{maxPrice}
+            </if>
+            <if test="status != null">
+                AND p.status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 排序方式：只使用固定分支，避免直接拼接外部传入的 SQL 片段 -->
+    <sql id="orderBy">
+        <choose>
+            <when test="sort != null and sort == 'hot'">
+                ORDER BY p.sales DESC, p.product_id DESC
+            </when>
+            <when test="sort != null and sort == 'new'">
+                ORDER BY p.create_time DESC, p.product_id DESC
+            </when>
+            <when test="sort != null and sort == 'price_asc'">
+                ORDER BY p.price ASC
+            </when>
+            <when test="sort != null and sort == 'price_desc'">
+                ORDER BY p.price DESC
+            </when>
+            <otherwise>
+                ORDER BY p.product_id DESC
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 多条件分页查询（LEFT JOIN 分类表带出分类名称） -->
+    <select id="selectByCondition" resultMap="productMap">
+        SELECT p.*, c.category_name
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        <include refid="queryCondition"/>
+        <include refid="orderBy"/>
+        LIMIT #{startIndex}, #{pageSize}
+    </select>
+
+    <!-- 多条件查询总记录数（条件必须与上面保持一致） -->
+    <select id="countByCondition" resultType="int">
+        SELECT COUNT(1)
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        <include refid="queryCondition"/>
+    </select>
+
+    <select id="selectById" resultMap="productMap">
+        SELECT p.*, c.category_name
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        WHERE p.product_id = #{productId}
+    </select>
+
+    <!-- 首页热门推荐：销量最高的 N 件上架商品 -->
+    <select id="selectHot" resultMap="productMap">
+        SELECT * FROM product
+        WHERE status = 1 AND is_hot = 1
+        ORDER BY sales DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 首页新品推荐：最新上架的 N 件商品 -->
+    <select id="selectNew" resultMap="productMap">
+        SELECT * FROM product
+        WHERE status = 1 AND is_new = 1
+        ORDER BY create_time DESC, product_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insert" parameterType="com.heritage.entity.Product"
+            useGeneratedKeys="true" keyProperty="productId">
+        INSERT INTO product
+        (category_id, product_name, product_desc, main_image, detail_images,
+         price, stock, sales, status, is_hot, is_new)
+        VALUES
+        (#{categoryId}, #{productName}, #{productDesc}, #{mainImage}, #{detailImages},
+         #{price}, #{stock}, 0, #{status}, #{isHot}, #{isNew})
+    </insert>
+
+    <!-- 编辑商品：使用动态 SQL 的 set 标签，只更新传了值的字段 -->
+    <update id="update">
+        UPDATE product
+        <set>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="productDesc != null">product_desc = #{productDesc},</if>
+            <if test="mainImage != null">main_image = #{mainImage},</if>
+            <if test="detailImages != null">detail_images = #{detailImages},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="isHot != null">is_hot = #{isHot},</if>
+            <if test="isNew != null">is_new = #{isNew},</if>
+        </set>
+        WHERE product_id = #{productId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM product WHERE product_id = #{productId}
+    </delete>
+
+    <!-- 上架 / 下架 -->
+    <update id="updateStatus">
+        UPDATE product SET status = #{status} WHERE product_id = #{productId}
+    </update>
+
+    <!--
+      扣减库存（下单事务核心 SQL）
+      关键点：WHERE 里带 AND stock >= #{quantity}，
+      库存不足时这条 UPDATE 影响行数为 0，Service 检测到 0 就抛异常触发事务回滚，
+      从而保证不会超卖（不会出现库存被扣成负数的情况）。
+    -->
+    <update id="deductStock">
+        UPDATE product
+        SET stock = stock - #{quantity},
+            sales = sales + #{quantity}
+        WHERE product_id = #{productId}
+          AND stock &gt;= #{quantity}
+    </update>
+
+    <!-- 回补库存（取消订单时调用） -->
+    <update id="restoreStock">
+        UPDATE product
+        SET stock = stock + #{quantity},
+            sales = sales - #{quantity}
+        WHERE product_id = #{productId}
+    </update>
+
+</mapper>

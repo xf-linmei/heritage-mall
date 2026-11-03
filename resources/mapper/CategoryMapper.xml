@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.heritage.dao.CategoryDao">
+
+    <resultMap id="categoryMap" type="com.heritage.entity.Category">
+        <id property="categoryId" column="category_id"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="categoryDesc" column="category_desc"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <!-- 查询全部分类：按排序值升序，排序值相同则按 ID 升序 -->
+    <select id="selectAll" resultMap="categoryMap">
+        SELECT * FROM category ORDER BY sort_order ASC, category_id ASC
+    </select>
+
+    <select id="selectById" resultMap="categoryMap">
+        SELECT * FROM category WHERE category_id = #{categoryId}
+    </select>
+
+    <insert id="insert" parameterType="com.heritage.entity.Category"
+            useGeneratedKeys="true" keyProperty="categoryId">
+        INSERT INTO category (category_name, category_desc, sort_order)
+        VALUES (#{categoryName}, #{categoryDesc}, #{sortOrder})
+    </insert>
+
+    <update id="update">
+        UPDATE category
+        SET category_name = #{categoryName},
+            category_desc = #{categoryDesc},
+            sort_order    = #{sortOrder}
+        WHERE category_id = #{categoryId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM category WHERE category_id = #{categoryId}
+    </delete>
+
+    <!-- 统计分类下商品数量：删除分类前做业务校验（数量大于 0 时禁止删除） -->
+    <select id="countProduct" resultType="int">
+        SELECT COUNT(1) FROM product WHERE category_id = #{categoryId}
+    </select>
+
+</mapper>

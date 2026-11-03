@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.heritage.dao.OrdersDao">
+
+    <resultMap id="ordersMap" type="com.heritage.entity.Orders">
+        <id property="orderId" column="order_id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="userId" column="user_id"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="status" column="status"/>
+        <result property="receiver" column="receiver"/>
+        <result property="phone" column="phone"/>
+        <result property="addressDetail" column="address_detail"/>
+        <result property="remark" column="remark"/>
+        <result property="createTime" column="create_time"/>
+        <result property="payTime" column="pay_time"/>
+        <result property="sendTime" column="send_time"/>
+        <result property="finishTime" column="finish_time"/>
+        <!-- 关联 user 表带出下单账号，后台订单列表用 -->
+        <result property="userName" column="user_name"/>
+    </resultMap>
+
+    <!-- 公共查询条件：订单状态 + 订单号/收货人关键字 -->
+    <sql id="queryCondition">
+        <where>
+            <if test="status != null">
+                AND o.status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (o.order_no LIKE CONCAT('%', #{keyword}, '%')
+                     OR o.receiver LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <!-- 新增订单主表：自增主键回填到 orders.orderId，供订单明细表使用 -->
+    <insert id="insert" parameterType="com.heritage.entity.Orders"
+            useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO orders
+        (order_no, user_id, total_amount, status, receiver, phone, address_detail, remark)
+        VALUES
+        (#{orderNo}, #{userId}, #{totalAmount}, #{status}, #{receiver}, #{phone}, #{addressDetail}, #{remark})
+    </insert>
+
+    <select id="selectById" resultMap="ordersMap">
+        SELECT o.*, u.username AS user_name
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        WHERE o.order_id = #{orderId}
+    </select>
+
+    <select id="selectByOrderNo" resultMap="ordersMap">
+        SELECT o.*, u.username AS user_name
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        WHERE o.order_no = #{orderNo}
+    </select>
+
+    <!-- 我的订单 -->
+    <select id="selectByUser" resultMap="ordersMap">
+        SELECT o.*, u.username AS user_name
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        WHERE o.user_id = #{userId}
+        ORDER BY o.create_time DESC
+    </select>
+
+    <!-- 后台：多条件分页查询 -->
+    <select id="selectByCondition" resultMap="ordersMap">
+        SELECT o.*, u.username AS user_name
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        <include refid="queryCondition"/>
+        ORDER BY o.create_time DESC
+        LIMIT #{startIndex}, #{pageSize}
+    </select>
+
+    <select id="countByCondition" resultType="int">
+        SELECT COUNT(1)
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        <include refid="queryCondition"/>
+    </select>
+
+    <!-- 模拟支付：待付款(0) → 待发货(1)，同时写入支付时间 -->
+    <update id="payOrder">
+        UPDATE orders
+        SET status = 1, pay_time = NOW()
+        WHERE order_id = #{orderId} AND status = 0
+    </update>
+
+    <!-- 发货：待发货(1) → 待收货(2)，同时写入发货时间 -->
+    <update id="deliverOrder">
+        UPDATE orders
+        SET status = 2, send_time = NOW()
+        WHERE order_id = #{orderId} AND status = 1
+    </update>
+
+    <!-- 确认收货：待收货(2) → 已完成(3)，同时写入完成时间 -->
+    <update id="finishOrder">
+        UPDATE orders
+        SET status = 3, finish_time = NOW()
+        WHERE order_id = #{orderId} AND status = 2
+    </update>
+
+    <!-- 取消订单：只有待付款(0) 状态可以取消 -->
+    <update id="cancelOrder">
+        UPDATE orders SET status = 4 WHERE order_id = #{orderId} AND status = 0
+    </update>
+
+    <update id="updateStatus">
+        UPDATE orders SET status = #{status} WHERE order_id = #{orderId}
+    </update>
+
+</mapper>

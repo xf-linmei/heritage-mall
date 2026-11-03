@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.heritage.dao.UserDao">
+
+    <!-- 结果映射：数据库下划线字段 映射到 实体驼峰属性 -->
+    <resultMap id="userMap" type="com.heritage.entity.User">
+        <id property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="realName" column="real_name"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="role" column="role"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <!-- 按主键查询 -->
+    <select id="selectById" resultMap="userMap">
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <!-- 按登录账号查询（登录、注册查重） -->
+    <select id="selectByUsername" resultMap="userMap">
+        SELECT * FROM user WHERE username = #{username}
+    </select>
+
+    <!-- 新增用户：useGeneratedKeys 让自增主键回填到 user.userId -->
+    <insert id="insert" parameterType="com.heritage.entity.User"
+            useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO user (username, password, real_name, phone, email, role, status)
+        VALUES (#{username}, #{password}, #{realName}, #{phone}, #{email}, #{role}, #{status})
+    </insert>
+
+    <!-- 修改个人信息（账号与密码不在此处修改） -->
+    <update id="update">
+        UPDATE user
+        SET real_name = #{realName},
+            phone     = #{phone},
+            email     = #{email}
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 修改密码 -->
+    <update id="updatePassword">
+        UPDATE user SET password = #{password} WHERE user_id = #{userId}
+    </update>
+
+    <!-- 启用 / 禁用账号 -->
+    <update id="updateStatus">
+        UPDATE user SET status = #{status} WHERE user_id = #{userId}
+    </update>
+
+    <!-- 后台：查询全部用户 -->
+    <select id="selectAll" resultMap="userMap">
+        SELECT * FROM user ORDER BY user_id DESC
+    </select>
+
+</mapper>

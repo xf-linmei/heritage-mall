@@ -1,0 +1,473 @@
+/* ==========================================================================
+   匠集 · 非遗文创电商系统  前台国风简约样式
+   配色：朱红 #8c2f26（印章色） + 洒金 #c8a45c + 宣纸底 #f6f4ef + 墨色 #333
+   ========================================================================== */
+
+:root {
+    --jj-red: #8c2f26;
+    --jj-red-light: #a63c33;
+    --jj-gold: #c8a45c;
+    --jj-paper: #f6f4ef;
+    --jj-ink: #333;
+    --jj-border: #e6e0d4;
+}
+
+body {
+    background: var(--jj-paper);
+    color: var(--jj-ink);
+    font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+    font-size: 14px;
+}
+
+a {
+    color: var(--jj-ink);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--jj-red);
+}
+
+/* ---------------- 页头 ---------------- */
+.jj-navbar {
+    background: #fff;
+    border-bottom: 3px solid var(--jj-red);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
+}
+
+.jj-logo {
+    font-size: 26px;
+    letter-spacing: 6px;
+    font-weight: 700;
+    color: var(--jj-red);
+}
+
+.jj-logo span {
+    color: var(--jj-gold);
+}
+
+.jj-navbar .nav-link {
+    color: var(--jj-ink);
+    padding: 6px 12px;
+}
+
+.jj-navbar .nav-link:hover {
+    color: var(--jj-red);
+}
+
+.jj-search {
+    display: flex;
+    align-items: stretch;
+    flex: 0 1 360px;
+    margin: 0 18px;
+}
+
+.jj-search-input {
+    border: 1px solid var(--jj-border);
+    border-right: none;
+    border-radius: 2px 0 0 2px;
+    height: 38px;
+}
+
+.jj-search .jj-btn {
+    flex: 0 0 auto;
+    padding: 0 18px;
+    height: 38px;
+    line-height: 36px;
+    border-radius: 0 2px 2px 0;
+    white-space: nowrap;
+}
+
+.jj-user a {
+    margin-left: 12px;
+    color: #666;
+    font-size: 13px;
+}
+
+.jj-user a:hover {
+    color: var(--jj-red);
+}
+
+/* ---------------- 按钮 ---------------- */
+.jj-btn {
+    display: inline-block;
+    background: var(--jj-red);
+    color: #fff;
+    border: 1px solid var(--jj-red);
+    border-radius: 2px;
+    padding: 8px 22px;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.jj-btn:hover {
+    background: var(--jj-red-light);
+    color: #fff;
+}
+
+.jj-btn-outline {
+    display: inline-block;
+    background: #fff;
+    color: var(--jj-red);
+    border: 1px solid var(--jj-red);
+    border-radius: 2px;
+    padding: 8px 22px;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.jj-btn-outline:hover {
+    background: var(--jj-red);
+    color: #fff;
+}
+
+.jj-btn-sm {
+    padding: 4px 12px;
+    font-size: 13px;
+}
+
+/* ---------------- 版块标题 ---------------- */
+.jj-section {
+    margin: 36px 0 20px;
+    border-bottom: 1px solid var(--jj-border);
+    padding-bottom: 10px;
+}
+
+.jj-section h2 {
+    font-size: 20px;
+    margin: 0;
+    color: var(--jj-ink);
+    letter-spacing: 2px;
+}
+
+.jj-section h2 em {
+    font-style: normal;
+    color: var(--jj-red);
+    border-left: 4px solid var(--jj-red);
+    padding-left: 10px;
+    margin-right: 10px;
+}
+
+.jj-section .more {
+    float: right;
+    font-size: 13px;
+    color: #999;
+    line-height: 28px;
+}
+
+/* ---------------- 商品卡片 ---------------- */
+.jj-card {
+    background: #fff;
+    border: 1px solid var(--jj-border);
+    margin-bottom: 24px;
+    transition: .2s;
+    display: block;
+}
+
+.jj-card:hover {
+    box-shadow: 0 6px 18px rgba(140, 47, 38, .12);
+    transform: translateY(-3px);
+    color: var(--jj-ink);
+}
+
+.jj-card img {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    background: #eee;
+}
+
+.jj-card .jj-card-body {
+    padding: 12px 14px;
+}
+
+.jj-card .name {
+    font-size: 15px;
+    height: 22px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.jj-card .desc {
+    color: #999;
+    font-size: 12px;
+    height: 18px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.jj-price {
+    color: var(--jj-red);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.jj-price small {
+    font-size: 12px;
+}
+
+.jj-muted {
+    color: #999;
+    font-size: 12px;
+}
+
+/* ---------------- 详情页 ---------------- */
+.jj-detail-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 440px;
+    object-fit: cover;
+    border: 1px solid var(--jj-border);
+    background: #fff;
+}
+
+.jj-thumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.jj-thumb-list img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border: 1px solid var(--jj-border);
+    margin: 10px 10px 0 0;
+    cursor: pointer;
+}
+
+.jj-thumb-list img:hover {
+    border-color: var(--jj-red);
+}
+
+.jj-detail-title {
+    font-size: 24px;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+.jj-buy-box {
+    background: #faf7f0;
+    border: 1px solid var(--jj-border);
+    padding: 14px 16px;
+    margin: 16px 0 20px;
+}
+
+.jj-panel {
+    background: #fff;
+    border: 1px solid var(--jj-border);
+    padding: 24px;
+    margin-bottom: 30px;
+}
+
+.jj-desc {
+    line-height: 2.1;
+    color: #555;
+    text-indent: 2em;
+    font-size: 14px;
+}
+
+/* ---------------- 表格 ---------------- */
+.jj-table {
+    background: #fff;
+}
+
+.jj-table th {
+    background: #faf7f0;
+    color: #666;
+    font-weight: normal;
+    border-bottom: 1px solid var(--jj-border);
+}
+
+.jj-table td {
+    vertical-align: middle;
+}
+
+/* ---------------- 提示信息 ---------------- */
+.jj-msg {
+    background: #fff8f0;
+    border: 1px solid #f0dcc0;
+    color: #8a6d3b;
+    padding: 10px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+}
+
+.jj-error {
+    background: #fdf2f2;
+    border: 1px solid #f0d4d4;
+    color: #a94442;
+    padding: 10px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+}
+
+/* ---------------- 筛选栏 ---------------- */
+.jj-filter {
+    background: #fff;
+    border: 1px solid var(--jj-border);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.jj-filter a {
+    display: inline-block;
+    padding: 3px 12px;
+    margin: 2px 4px 2px 0;
+    border-radius: 12px;
+    color: #666;
+}
+
+.jj-filter a:hover, .jj-filter a.active {
+    background: var(--jj-red);
+    color: #fff;
+}
+
+/* ---------------- 分页 ---------------- */
+.jj-page a, .jj-page span {
+    display: inline-block;
+    padding: 5px 12px;
+    border: 1px solid var(--jj-border);
+    background: #fff;
+    margin-right: 4px;
+    color: #666;
+}
+
+.jj-page a:hover {
+    background: var(--jj-red);
+    color: #fff;
+    border-color: var(--jj-red);
+}
+
+.jj-page span.current {
+    background: var(--jj-red);
+    color: #fff;
+    border-color: var(--jj-red);
+}
+
+/* ---------------- 页脚 ---------------- */
+.jj-footer {
+    background: #3c3c3c;
+    color: #aaa;
+    padding: 26px 0;
+    margin-top: 50px;
+    font-size: 13px;
+    line-height: 2;
+}
+
+.jj-footer a {
+    color: #bbb;
+}
+
+/* ---------------- 表单 ---------------- */
+.jj-form-label {
+    color: #666;
+}
+
+.jj-login-box {
+    max-width: 420px;
+    margin: 50px auto;
+    background: #fff;
+    border: 1px solid var(--jj-border);
+    padding: 34px;
+}
+
+.jj-login-box h2 {
+    text-align: center;
+    color: var(--jj-red);
+    letter-spacing: 6px;
+    margin-bottom: 24px;
+}
+
+/* ==========================================================================
+   后台管理页面样式（简洁清晰，与前台国风风格统一但更朴素）
+   ========================================================================== */
+.jj-admin-top {
+    background: #3c3c3c;
+    color: #fff;
+    height: 56px;
+    line-height: 56px;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.jj-admin-top .logo {
+    font-size: 18px;
+    letter-spacing: 4px;
+}
+
+.jj-admin-top a {
+    color: #ddd;
+    margin-left: 16px;
+    font-size: 13px;
+}
+
+.jj-admin-top a:hover {
+    color: #fff;
+}
+
+.jj-admin-body {
+    display: flex;
+    min-height: calc(100vh - 56px);
+}
+
+.jj-admin-side {
+    width: 200px;
+    background: #fff;
+    border-right: 1px solid var(--jj-border);
+    padding: 16px 0;
+}
+
+.jj-admin-side a {
+    display: block;
+    padding: 12px 24px;
+    color: #555;
+    border-left: 3px solid transparent;
+}
+
+.jj-admin-side a:hover {
+    background: #faf7f0;
+    color: var(--jj-red);
+    border-left-color: var(--jj-red);
+}
+
+.jj-admin-main {
+    flex: 1;
+    padding: 22px;
+    background: var(--jj-paper);
+    overflow-x: hidden;
+}
+
+.jj-admin-title {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--jj-ink);
+}
+
+.jj-admin-box {
+    background: #fff;
+    border: 1px solid var(--jj-border);
+    padding: 18px;
+}
+
+.jj-admin-main .table th {
+    white-space: nowrap;
+}
+
+.jj-thumb-admin {
+    width: 90px;
+    height: 56px;
+    object-fit: cover;
+    border: 1px solid var(--jj-border);
+}

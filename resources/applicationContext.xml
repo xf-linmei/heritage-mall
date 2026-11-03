@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/tx
+           http://www.springframework.org/schema/tx/spring-tx.xsd
+           http://www.springframework.org/schema/aop
+           http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- ==================================================================
+         1. 加载 jdbc.properties（数据库连接四要素）
+         ================================================================== -->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+
+    <!-- ==================================================================
+         2. 组件扫描：扫描 Service 与 Action
+            - @Service 标注的业务类交给 Spring 管理
+            - @Controller + @Scope("prototype") 标注的 Struts2 Action 也交给 Spring 创建
+              （配合 struts2-spring-plugin，Action 中即可 @Autowired 注入 Service）
+            注意：不扫描 com.heritage.dao，DAO 由下面的 MapperScannerConfigurer 生成代理实现
+         ================================================================== -->
+    <context:component-scan base-package="com.heritage">
+        <context:exclude-filter type="regex" expression="com\.heritage\.entity\..*"/>
+        <context:exclude-filter type="regex" expression="com\.heritage\.common\..*"/>
+    </context:component-scan>
+
+    <!-- ==================================================================
+         3. Druid 数据源
+         ================================================================== -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="initialSize" value="${jdbc.initialSize}"/>
+        <property name="maxActive" value="${jdbc.maxActive}"/>
+        <property name="minIdle" value="${jdbc.minIdle}"/>
+        <!-- 获取连接最大等待时间（毫秒） -->
+        <property name="maxWait" value="60000"/>
+        <!-- 空闲连接检测 SQL，保证连接池里的连接可用 -->
+        <property name="validationQuery" value="SELECT 1"/>
+        <property name="testWhileIdle" value="true"/>
+        <property name="testOnBorrow" value="false"/>
+    </bean>
+
+    <!-- ==================================================================
+         4. MyBatis 整合：SqlSessionFactory
+            - configLocation：mybatis-config.xml（驼峰映射、日志实现）
+            - mapperLocations：扫描 resources/mapper 下所有 Mapper XML
+            - typeAliasesPackage：com.heritage.entity，XML 中可直接写类名
+         ================================================================== -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+        <property name="typeAliasesPackage" value="com.heritage.entity"/>
+    </bean>
+
+    <!-- ==================================================================
+         5. Mapper 接口扫描器：为 com.heritage.dao 下的接口自动生成实现并注册为 Bean
+            （Bean 名默认为接口名首字母小写，如 productDao，供 Service @Autowired 注入）
+         ================================================================== -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <property name="basePackage" value="com.heritage.dao"/>
+    </bean>
+
+    <!-- ==================================================================
+         6. 声明式事务（本作业的加分点：下单业务事务控制）
+         ================================================================== -->
+
+    <!-- 6.1 事务管理器：数据源事务管理器 -->
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- 6.2 事务通知：定义不同方法的事务属性 -->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <!-- 写操作：必须开启事务， RuntimeException 自动回滚 -->
+            <tx:method name="createOrder*"  propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="payOrder*"     propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="cancelOrder*"  propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="confirmOrder*" propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="deliverOrder*" propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="add*"          propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="save*"         propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="update*"       propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="delete*"       propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="remove*"       propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <tx:method name="set*"          propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+            <!-- 读操作：只读事务，提升性能 -->
+            <tx:method name="get*"    read-only="true"  propagation="SUPPORTS"/>
+            <tx:method name="list*"   read-only="true"  propagation="SUPPORTS"/>
+            <tx:method name="find*"   read-only="true"  propagation="SUPPORTS"/>
+            <tx:method name="count*"  read-only="true"  propagation="SUPPORTS"/>
+            <tx:method name="check*"  read-only="true"  propagation="SUPPORTS"/>
+            <!-- 其它方法默认有事务 -->
+            <tx:method name="*"       propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- 6.3 AOP 切面：把事务通知织入 Service 层所有方法 -->
+    <aop:config>
+        <aop:pointcut id="servicePointcut"
+                      expression="execution(* com.heritage.service.*.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="servicePointcut"/>
+    </aop:config>
+
+</beans>

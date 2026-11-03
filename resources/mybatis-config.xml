@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <settings>
+        <!-- 数据库下划线字段(user_id / create_time) 自动映射到驼峰属性(userId / createTime) -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!-- 使用 slf4j（logback）输出 SQL，控制台可直接看到执行的 SQL 与参数，方便调试与答辩演示 -->
+        <setting name="logImpl" value="SLF4J"/>
+        <!-- 开启二级缓存开关（本作业不使用二级缓存，置为 false 避免误用） -->
+        <setting name="cacheEnabled" value="false"/>
+        <!-- 允许 JDBC 生成主键（订单/明细插入后回填自增 ID） -->
+        <setting name="useGeneratedKeys" value="true"/>
+    </settings>
+
+    <!-- 注意：Mapper XML 的注册由 applicationContext.xml 中的
+         SqlSessionFactoryBean.mapperLocations = classpath:mapper/*.xml 统一扫描完成，
+         这里不再重复声明 <mappers>，避免重复注册报错。 -->
+
+</configuration>

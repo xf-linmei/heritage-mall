@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 控制台输出：开发阶段直接在 IDEA/Tomcat 控制台看到运行的 SQL -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- DAO 包（Mapper 接口）设为 DEBUG，可打印 MyBatis 执行的 SQL 与参数，答辩演示很好用 -->
+    <logger name="com.heritage.dao" level="DEBUG"/>
+    <!-- 业务层 INFO -->
+    <logger name="com.heritage.service" level="INFO"/>
+    <!-- 关闭 Spring 大量无关 DEBUG 日志 -->
+    <logger name="org.springframework" level="WARN"/>
+    <!-- 关闭 Struts2 的啰嗦日志 -->
+    <logger name="com.opensymphony.xwork2" level="WARN"/>
+    <logger name="org.apache.struts2" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

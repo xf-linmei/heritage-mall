@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.heritage.dao.CartDao">
+
+    <!--
+      购物车结果映射：
+      association 通过嵌套查询把商品对象一起查出来（column="product_id" 作为参数传入），
+      这样 JSP 里可以直接 cart.product.productName / cart.product.price 取值。
+    -->
+    <resultMap id="cartMap" type="com.heritage.entity.Cart">
+        <id property="cartId" column="cart_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="quantity" column="quantity"/>
+        <result property="checked" column="checked"/>
+        <result property="createTime" column="create_time"/>
+        <association property="product" column="product_id"
+                     select="com.heritage.dao.ProductDao.selectById"/>
+    </resultMap>
+
+    <select id="selectByUser" resultMap="cartMap">
+        SELECT * FROM cart WHERE user_id = #{userId} ORDER BY create_time DESC, cart_id DESC
+    </select>
+
+    <select id="selectByUserAndProduct" resultMap="cartMap">
+        SELECT * FROM cart WHERE user_id = #{userId} AND product_id = #{productId}
+    </select>
+
+    <insert id="insert" parameterType="com.heritage.entity.Cart"
+            useGeneratedKeys="true" keyProperty="cartId">
+        INSERT INTO cart (user_id, product_id, quantity, checked)
+        VALUES (#{userId}, #{productId}, #{quantity}, #{checked})
+    </insert>
+
+    <update id="updateQuantity">
+        UPDATE cart SET quantity = #{quantity} WHERE cart_id = #{cartId}
+    </update>
+
+    <update id="updateChecked">
+        UPDATE cart SET checked = #{checked} WHERE cart_id = #{cartId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM cart WHERE cart_id = #{cartId}
+    </delete>
+
+    <delete id="deleteByUser">
+        DELETE FROM cart WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 下单成功后移除购物车中已购买的商品 -->
+    <delete id="deleteByUserAndProduct">
+        DELETE FROM cart WHERE user_id = #{userId} AND product_id = #{productId}
+    </delete>
+
+</mapper>

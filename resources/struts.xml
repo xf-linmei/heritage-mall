@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+
+<struts>
+
+    <!-- ==================================================================
+         一、全局常量
+         ================================================================== -->
+    <!-- 开发模式：修改配置自动加载、页面报错信息更详细（答辩演示时方便） -->
+    <constant name="struts.devMode" value="true"/>
+    <!-- 关闭动态方法调用（DMI），所有方法都在下面用 method="" 显式声明，安全可控 -->
+    <constant name="struts.enable.DynamicMethodInvocation" value="false"/>
+    <!-- 请求参数与响应编码统一 UTF-8 -->
+    <constant name="struts.i18n.encoding" value="UTF-8"/>
+    <!-- Action 访问后缀：*.action -->
+    <constant name="struts.action.extension" value="action"/>
+    <!-- 文件上传总大小上限 10MB（单文件 5MB 在各上传 Action 中单独限制） -->
+    <constant name="struts.multipart.maxSize" value="10485760"/>
+    <!-- 表单使用 simple 主题：struts2 标签不再自动裹 table，样式完全交给 Bootstrap5 -->
+    <constant name="struts.ui.theme" value="simple"/>
+    <!-- 由 Spring 容器创建 Action（struts2-spring-plugin 提供），使 Action 中可 @Autowired -->
+    <constant name="struts.objectFactory" value="spring"/>
+
+    <!-- ==================================================================
+         二、基础包 base（抽象包，只做公共定义，不对外提供 Action）
+             定义：拦截器、拦截器栈、全局结果、全局异常映射
+             front / admin 两个子包继承它，公共配置自动生效
+         ================================================================== -->
+    <package name="base" extends="struts-default" abstract="true">
+
+        <interceptors>
+            <!-- 登录拦截器：未登录用户访问个人中心/购物车/订单时跳转到登录页 -->
+            <interceptor name="loginInterceptor"
+                         class="com.heritage.interceptor.LoginInterceptor"/>
+            <!-- 管理员拦截器：非管理员访问后台时拒绝访问 -->
+            <interceptor name="adminInterceptor"
+                         class="com.heritage.interceptor.AdminInterceptor"/>
+
+            <!-- 需要登录的栈：登录拦截 + Struts2 默认功能栈（参数注入、文件上传、校验等） -->
+            <interceptor-stack name="loginStack">
+                <interceptor-ref name="loginInterceptor"/>
+                <interceptor-ref name="defaultStack"/>
+            </interceptor-stack>
+
+            <!-- 后台栈：先判管理员、再判登录，最后走默认栈 -->
+            <interceptor-stack name="adminStack">
+                <interceptor-ref name="adminInterceptor"/>
+                <interceptor-ref name="loginInterceptor"/>
+                <interceptor-ref name="defaultStack"/>
+            </interceptor-stack>
+        </interceptors>
+
+        <!-- 公共栈：默认不强制登录（首页/商品页游客可访问） -->
+        <default-interceptor-ref name="defaultStack"/>
+
+        <global-results>
+            <!-- 拦截器返回的登录视图 -->
+            <result name="login">/WEB-INF/jsp/front/login.jsp</result>
+            <!-- 拦截器返回的无权限视图 -->
+            <result name="noPermission">/WEB-INF/jsp/common/no_permission.jsp</result>
+            <!-- 全局异常 / 文件上传类型或大小不合法的兜底视图 -->
+            <result name="error">/WEB-INF/jsp/common/error.jsp</result>
+            <result name="input">/WEB-INF/jsp/common/error.jsp</result>
+        </global-results>
+
+        <global-exception-mappings>
+            <!-- 任何未捕获异常都统一跳到错误页，不会出现 Tomcat 黄页 -->
+            <exception-mapping result="error" exception="java.lang.Exception"/>
+        </global-exception-mappings>
+    </package>
+
+    <!-- ==================================================================
+         三、前台包 front（namespace="/"，游客可浏览；需要登录的 Action 单独引用 loginStack）
+         ================================================================== -->
+    <package name="front" namespace="/" extends="base">
+
+        <!-- ===== 首页 ===== -->
+        <action name="index" class="com.heritage.action.front.IndexAction" method="index">
+            <result name="success">/WEB-INF/jsp/front/index.jsp</result>
+        </action>
+
+        <!-- ===== 商品浏览 / 详情 ===== -->
+        <action name="product_list" class="com.heritage.action.front.ProductAction" method="list">
+            <result name="success">/WEB-INF/jsp/front/product_list.jsp</result>
+        </action>
+        <action name="product_detail" class="com.heritage.action.front.ProductAction" method="detail">
+            <result name="success">/WEB-INF/jsp/front/product_detail.jsp</result>
+        </action>
+
+        <!-- ===== 用户：注册 / 登录 / 退出 / 个人中心 / 改密码 ===== -->
+        <action name="user_toLogin" class="com.heritage.action.front.UserAction" method="toLogin">
+            <result name="success">/WEB-INF/jsp/front/login.jsp</result>
+        </action>
+        <action name="user_login" class="com.heritage.action.front.UserAction" method="login">
+            <result name="success" type="redirectAction">index</result>
+            <!-- 账号或密码错误：回到登录页并显示错误信息 -->
+            <result name="input">/WEB-INF/jsp/front/login.jsp</result>
+        </action>
+        <action name="user_toRegister" class="com.heritage.action.front.UserAction" method="toRegister">
+            <result name="success">/WEB-INF/jsp/front/register.jsp</result>
+        </action>
+        <action name="user_register" class="com.heritage.action.front.UserAction" method="register">
+            <!-- 注册成功：转发到登录页并提示（重定向会丢失提示信息） -->
+            <result name="success">/WEB-INF/jsp/front/login.jsp</result>
+            <result name="input">/WEB-INF/jsp/front/register.jsp</result>
+        </action>
+        <action name="user_logout" class="com.heritage.action.front.UserAction" method="logout">
+            <result name="success" type="redirectAction">index</result>
+        </action>
+
+        <!-- ===== 以下需登录：个人中心 / 修改资料 / 修改密码 ===== -->
+        <action name="user_profile" class="com.heritage.action.front.UserAction" method="profile">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/user_profile.jsp</result>
+        </action>
+        <action name="user_updateProfile" class="com.heritage.action.front.UserAction" method="updateProfile">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">user_profile</result>
+        </action>
+        <action name="user_toPassword" class="com.heritage.action.front.UserAction" method="toPassword">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/user_password.jsp</result>
+        </action>
+        <action name="user_updatePassword" class="com.heritage.action.front.UserAction" method="updatePassword">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/user_password.jsp</result>
+        </action>
+
+        <!-- ===== 购物车（需登录）===== -->
+        <action name="cart_list" class="com.heritage.action.front.CartAction" method="list">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/cart_list.jsp</result>
+        </action>
+        <action name="cart_add" class="com.heritage.action.front.CartAction" method="add">
+            <interceptor-ref name="loginStack"/>
+            <!-- 加购后跳购物车，使用重定向避免刷新重复提交 -->
+            <result name="success" type="redirectAction">cart_list</result>
+        </action>
+        <action name="cart_update" class="com.heritage.action.front.CartAction" method="updateQuantity">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">cart_list</result>
+        </action>
+        <action name="cart_delete" class="com.heritage.action.front.CartAction" method="delete">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">cart_list</result>
+        </action>
+        <action name="cart_check" class="com.heritage.action.front.CartAction" method="check">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">cart_list</result>
+        </action>
+
+        <!-- ===== 订单（需登录）===== -->
+        <action name="order_checkout" class="com.heritage.action.front.OrderAction" method="checkout">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/order_checkout.jsp</result>
+        </action>
+        <!-- 下单：Spring 声明式事务保证 订单主表+明细+扣库存 同成功同失败 -->
+        <action name="order_create" class="com.heritage.action.front.OrderAction" method="create">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">order_list</result>
+        </action>
+        <!-- 模拟支付 -->
+        <action name="order_pay" class="com.heritage.action.front.OrderAction" method="pay">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">order_list</result>
+        </action>
+        <action name="order_list" class="com.heritage.action.front.OrderAction" method="list">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/order_list.jsp</result>
+        </action>
+        <action name="order_detail" class="com.heritage.action.front.OrderAction" method="detail">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/order_detail.jsp</result>
+        </action>
+        <action name="order_confirm" class="com.heritage.action.front.OrderAction" method="confirmReceive">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">order_list</result>
+        </action>
+        <action name="order_cancel" class="com.heritage.action.front.OrderAction" method="cancel">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">order_list</result>
+        </action>
+
+        <!-- ===== 收货地址（需登录）===== -->
+        <action name="address_list" class="com.heritage.action.front.AddressAction" method="list">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/address_list.jsp</result>
+        </action>
+        <action name="address_add" class="com.heritage.action.front.AddressAction" method="add">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">address_list</result>
+        </action>
+        <action name="address_update" class="com.heritage.action.front.AddressAction" method="update">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">address_list</result>
+        </action>
+        <action name="address_delete" class="com.heritage.action.front.AddressAction" method="delete">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">address_list</result>
+        </action>
+        <action name="address_default" class="com.heritage.action.front.AddressAction" method="setDefault">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">address_list</result>
+        </action>
+
+        <!-- ===== 我的收藏（需登录）===== -->
+        <action name="collect_list" class="com.heritage.action.front.CollectAction" method="list">
+            <interceptor-ref name="loginStack"/>
+            <result name="success">/WEB-INF/jsp/front/collect_list.jsp</result>
+        </action>
+        <action name="collect_add" class="com.heritage.action.front.CollectAction" method="add">
+            <interceptor-ref name="loginStack"/>
+            <!-- 收藏后回到该商品详情页：redirectAction 会自动携带 productId 参数 -->
+            <result name="success" type="redirectAction">
+                <param name="actionName">product_detail</param>
+                <param name="productId">${productId}</param>
+            </result>
+        </action>
+        <action name="collect_delete" class="com.heritage.action.front.CollectAction" method="delete">
+            <interceptor-ref name="loginStack"/>
+            <result name="success" type="redirectAction">collect_list</result>
+        </action>
+    </package>
+
+    <!-- ==================================================================
+         四、后台包 admin（namespace="/admin"，全部走 adminStack：必须登录且是管理员）
+         ================================================================== -->
+    <package name="admin" namespace="/admin" extends="base">
+
+        <!-- ===== 轮播 Banner 管理 ===== -->
+        <action name="banner_list" class="com.heritage.action.admin.BannerAction" method="list">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/banner_list.jsp</result>
+        </action>
+        <action name="banner_toAdd" class="com.heritage.action.admin.BannerAction" method="toAdd">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/banner_form.jsp</result>
+        </action>
+        <!-- 新增轮播（含图片上传：限制 5MB、jpg/png） -->
+        <action name="banner_add" class="com.heritage.action.admin.BannerAction" method="add">
+            <interceptor-ref name="adminStack">
+                <param name="fileUpload.maximumSize">5242880</param>
+                <param name="fileUpload.allowedExtensions">.jpg,.jpeg,.png</param>
+            </interceptor-ref>
+            <result name="success" type="redirectAction">banner_list</result>
+        </action>
+        <action name="banner_toEdit" class="com.heritage.action.admin.BannerAction" method="toEdit">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/banner_form.jsp</result>
+        </action>
+        <action name="banner_edit" class="com.heritage.action.admin.BannerAction" method="edit">
+            <interceptor-ref name="adminStack">
+                <param name="fileUpload.maximumSize">5242880</param>
+                <param name="fileUpload.allowedExtensions">.jpg,.jpeg,.png</param>
+            </interceptor-ref>
+            <result name="success" type="redirectAction">banner_list</result>
+        </action>
+        <action name="banner_delete" class="com.heritage.action.admin.BannerAction" method="delete">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">banner_list</result>
+        </action>
+        <action name="banner_status" class="com.heritage.action.admin.BannerAction" method="updateStatus">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">banner_list</result>
+        </action>
+
+        <!-- ===== 非遗分类管理 ===== -->
+        <action name="category_list" class="com.heritage.action.admin.CategoryAction" method="list">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/category_list.jsp</result>
+            <!-- 业务校验失败（分类下存在商品禁止删除）时重新展示列表 + 错误提示 -->
+            <result name="input">/WEB-INF/jsp/admin/category_list.jsp</result>
+        </action>
+        <action name="category_add" class="com.heritage.action.admin.CategoryAction" method="add">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">category_list</result>
+        </action>
+        <action name="category_edit" class="com.heritage.action.admin.CategoryAction" method="edit">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">category_list</result>
+        </action>
+        <action name="category_delete" class="com.heritage.action.admin.CategoryAction" method="delete">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">category_list</result>
+            <result name="input">/WEB-INF/jsp/admin/category_list.jsp</result>
+        </action>
+
+        <!-- ===== 文创商品管理（主图 + 多张详情图上传）===== -->
+        <action name="product_list" class="com.heritage.action.admin.ProductAction" method="list">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/product_list.jsp</result>
+        </action>
+        <action name="product_toAdd" class="com.heritage.action.admin.ProductAction" method="toAdd">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/product_form.jsp</result>
+        </action>
+        <action name="product_add" class="com.heritage.action.admin.ProductAction" method="add">
+            <interceptor-ref name="adminStack">
+                <param name="fileUpload.maximumSize">5242880</param>
+                <param name="fileUpload.allowedExtensions">.jpg,.jpeg,.png</param>
+            </interceptor-ref>
+            <result name="success" type="redirectAction">product_list</result>
+        </action>
+        <action name="product_toEdit" class="com.heritage.action.admin.ProductAction" method="toEdit">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/product_form.jsp</result>
+        </action>
+        <action name="product_edit" class="com.heritage.action.admin.ProductAction" method="edit">
+            <interceptor-ref name="adminStack">
+                <param name="fileUpload.maximumSize">5242880</param>
+                <param name="fileUpload.allowedExtensions">.jpg,.jpeg,.png</param>
+            </interceptor-ref>
+            <result name="success" type="redirectAction">product_list</result>
+        </action>
+        <action name="product_delete" class="com.heritage.action.admin.ProductAction" method="delete">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">product_list</result>
+        </action>
+        <!-- 上架 / 下架 -->
+        <action name="product_status" class="com.heritage.action.admin.ProductAction" method="updateStatus">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">product_list</result>
+        </action>
+
+        <!-- ===== 用户管理 ===== -->
+        <action name="user_list" class="com.heritage.action.admin.UserAction" method="list">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/user_list.jsp</result>
+        </action>
+        <!-- 禁用 / 启用 -->
+        <action name="user_status" class="com.heritage.action.admin.UserAction" method="updateStatus">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">user_list</result>
+        </action>
+
+        <!-- ===== 订单管理 ===== -->
+        <action name="order_list" class="com.heritage.action.admin.OrderAction" method="list">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/order_list.jsp</result>
+        </action>
+        <action name="order_detail" class="com.heritage.action.admin.OrderAction" method="detail">
+            <interceptor-ref name="adminStack"/>
+            <result name="success">/WEB-INF/jsp/admin/order_detail.jsp</result>
+        </action>
+        <!-- 发货：待发货 -> 待收货 -->
+        <action name="order_deliver" class="com.heritage.action.admin.OrderAction" method="deliver">
+            <interceptor-ref name="adminStack"/>
+            <result name="success" type="redirectAction">order_list</result>
+        </action>
+    </package>
+
+</struts>
